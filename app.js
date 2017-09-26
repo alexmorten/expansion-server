@@ -92,15 +92,43 @@ class Game{
     }
     this.nodes = nodes;
     this.links=newLinks;
-    this.setStartingPositions();
     }
+  generateRandomMap(){
+    var nodeAmount = 40;
+    var nodes = [];
+    var links=[];
+    for (var i = 0; i < 40; i++) {
+      nodes.push({id:this.nextId++});
+    }
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var newLink ={
+        id:this.nextId++,
+        source:node.id,
+        target:getRandomArrElement(nodes).id
+      };
+      links.push(newLink);
+      if(Math.random()<0.3){
+        var newLink ={
+          id:this.nextId++,
+          source:node.id,
+          target:getRandomArrElement(nodes).id
+        };
+        links.push(newLink);
+      }
+    }
+    this.nodes=nodes;
+    this.links=links;
+  }
   setStartingPositions(){ //temp!
-    this.nodes[0].owner=this.players[0].id;
-    this.nodes[this.nodes.length-1].owner=this.players[1].id;
+    getRandomUnownedNode(this.nodes).owner=this.players[0].id;
+    getRandomUnownedNode(this.nodes).owner=this.players[1].id;
 
   }
   startGame(){
-    this.generateNodeGrid();
+    //this.generateNodeGrid();
+    this.generateRandomMap();
+    this.setStartingPositions();
     console.log("game started");
     this.messagePlayers("game_started",{nodes:this.nodes,links:this.links,nextPlayer:this.players[this.currentPlayerIndex].id})
   }
@@ -149,7 +177,7 @@ class Game{
     }
   }
   destroyNode(node_id){
-    
+
     var connectedLinks = this.links.filter(link=>(link.source === node_id || link.target === node_id));
     var directlyConnectedNodes = this.nodes.filter(node=>{
       return connectedLinks.filter(link=>(link.source === node.id || link.target == node.id)).length>0
@@ -222,3 +250,19 @@ io.on("connection", socket => {
 
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
+
+
+
+function getRandomArrElement(arr){
+  var length = arr.length;
+  return arr[Math.floor(length*Math.random())];
+}
+function getRandomUnownedNode(nodes){
+  console.log(nodes);
+  var randomNode = getRandomArrElement(nodes);
+  console.log(randomNode);
+  while (randomNode.owner) {
+   randomNode = getRandomArrElement(nodes);
+  }
+  return randomNode;
+}
