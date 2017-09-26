@@ -16,8 +16,8 @@ app.use(function(request, response, next) {
 
 const server = app.listen(port);
 
-const io = socketIo(server, { origins: '*:*'}); // < Interesting!
-
+const io = socketIo(server); // < Interesting!
+io.origins('*:*')
 
 
 class Manager{
