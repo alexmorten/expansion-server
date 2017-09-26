@@ -27,7 +27,7 @@ app.use(function (req, res, next) {
     next();
 });
 
-const server = app.listen(port);
+const server = http.createServer(app);
 
 const io = socketIo(server,{
   log: false,
