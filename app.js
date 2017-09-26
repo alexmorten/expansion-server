@@ -7,6 +7,13 @@ const port = process.env.PORT || 4001;
 
 const app = express();
 app.use(cors());
+app.use(function(request, response, next) {
+  response.header("Access-Control-Allow-Origin", "*");
+  response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
+
 const server = app.listen(port);
 
 const io = socketIo(server, { origins: '*:*'}); // < Interesting!
