@@ -9,7 +9,7 @@ const app = express();
 const server = http.createServer(app);
 
 const io = socketIo(server); // < Interesting!
-
+io.set('origins', '*:*');
 
 
 class Manager{
@@ -41,7 +41,7 @@ class Game{
     this.players=[];
     this.nodes=[];
     this.links=[];
-    this.maxPlayers = maxPlayers || 2;
+    this.maxPlayers = maxPlayers || 3;
     this.nextId=0;
     this.currentPlayerIndex=0;
   }
@@ -56,6 +56,8 @@ class Game{
     }
   }
   isFull(){
+    console.log(this.players.length);
+    console.log(`max players: ${this.maxPlayers}`);
     return this.players.length === this.maxPlayers;
   }
   generateNodeGrid(){
@@ -94,10 +96,10 @@ class Game{
     this.links=newLinks;
     }
   generateRandomMap(){
-    var nodeAmount = 40;
+    var nodeAmount = 80;
     var nodes = [];
     var links=[];
-    for (var i = 0; i < 40; i++) {
+    for (var i = 0; i < nodeAmount; i++) {
       nodes.push({id:this.nextId++});
     }
     for (var i = 0; i < nodes.length; i++) {
@@ -108,7 +110,7 @@ class Game{
         target:getRandomArrElement(nodes).id
       };
       links.push(newLink);
-      if(Math.random()<0.3){
+      if(Math.random()<0.2){
         var newLink ={
           id:this.nextId++,
           source:node.id,
@@ -121,15 +123,16 @@ class Game{
     this.links=links;
   }
   setStartingPositions(){ //temp!
-    getRandomUnownedNode(this.nodes).owner=this.players[0].id;
-    getRandomUnownedNode(this.nodes).owner=this.players[1].id;
-
+    for (var i = 0; i < this.players.length; i++) {
+      getRandomUnownedNode(this.nodes).owner=this.players[i].id
+    }
   }
   startGame(){
+    console.log("game started");
+
     //this.generateNodeGrid();
     this.generateRandomMap();
     this.setStartingPositions();
-    console.log("game started");
     this.messagePlayers("game_started",{nodes:this.nodes,links:this.links,nextPlayer:this.players[this.currentPlayerIndex].id})
   }
   playerIsInGame(user_id){
@@ -150,6 +153,9 @@ class Game{
           this.players=this.players.filter(player=>player.id!==user_id);
           this.stopGame();
           break;
+        case "skip":
+          this.handleSkip(user_id);
+          break;
       }
     }
   }
@@ -157,6 +163,11 @@ class Game{
     var nextIndex = (this.currentPlayerIndex+1)%this.maxPlayers;
     this.currentPlayerIndex = nextIndex;
     return nextIndex;
+  }
+  handleSkip(user_id){
+    if (user_id===this.players[this.currentPlayerIndex].id) {
+      this.messagePlayers("turn_skipped",{nextPlayer:this.players[this.nextPlayer()].id});
+    }
   }
   handleTurn(user_id,data){
     var currentPlayer = this.players[this.currentPlayerIndex];
@@ -185,7 +196,7 @@ class Game{
     var destroyedNodes = this.nodes.filter(node=>!(
       directlyConnectedNodes.filter(directNode=>(
         directNode.id === node.id
-      )).length === 0 || node.owner
+      )).length === 0 //|| node.owner
     ));
     var restLinks=this.links.filter(link=>(
       destroyedNodes.filter(node=>(node.id===link.target||node.id===link.source)).length===0
@@ -237,6 +248,9 @@ io.on("connection", socket => {
   socket.emit("set_id",{id:socket.id});
   socket.on("turn",(data)=>{
     manager.handleEvent(socket.id,"turn",data);
+  })
+  socket.on("skip",()=>{
+    manager.handleEvent(socket.id,"skip");
   })
   manager.assignPlayer(socket.id);
   socket.on("disconnect", () => {
