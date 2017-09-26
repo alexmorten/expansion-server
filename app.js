@@ -30,22 +30,8 @@ app.use(function (req, res, next) {
 const server = http.createServer(app);
 
 const io = socketIo(server); // < Interesting!
-// io.origins('*:*')
-io.configure('production', function(){
-    console.log("Server in production mode");
-    io.enable('browser client minification');  // send minified client
-    io.enable('browser client etag'); // apply etag caching logic based on version number
-    io.enable('browser client gzip'); // the file
-    io.set('log level', 1);           // logging
-    io.set('transports', [            // all transports (optional if you want flashsocket)
-        'websocket'
-        , 'flashsocket'
-        , 'htmlfile'
-        , 'xhr-polling'
-        , 'jsonp-polling'
-    ]);
-io.set('origins', '*:*');
-});
+io.origins('*:*')
+
 
 class Manager{
   constructor(){
